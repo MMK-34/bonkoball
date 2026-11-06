@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bonkoball — oddly satisfying mini games</title>
+<meta name="description" content="Play Bonko's oddly satisfying physics mini games: Melody Plinko, Find Bonko, Ring Escape, Whack Grumpo and more. New game of the day, live players, daily leaderboard. Free, instant, no download.">
+<meta name="theme-color" content="#0B1020">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta property="og:title" content="Bonkoball — play with Bonko">
+<meta property="og:description" content="The orange ball from the videos, now playable. 10 free satisfying mini games, a new game of the day and a live leaderboard.">
+<meta property="og:image" content="assets/og.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="config.js"></script>
+<script src="js/games.js"></script>
+</head>
+<body>
+<main class="hub">
+  <section class="hero">
+    <canvas id="hero-mascot" width="220" height="220"></canvas>
+    <div>
+      <h1>BONKO<span>BALL</span></h1>
+      <p>The ball from the videos. Now you play. 🟠</p>
+      <p class="who">You are <b id="who-name">…</b> <button class="link" id="who-edit">change</button></p>
+      <div class="name-row hidden" id="name-row"><input id="name-in" maxlength="16" placeholder="Your name" autocomplete="off"><button class="btn btn-ghost" id="name-ok">OK</button></div>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><b id="st-plays">0</b><span>GAMES PLAYED</span></div>
+    <div class="stat"><b id="st-total">0</b><span>TOTAL SCORE</span></div>
+    <div class="stat"><b id="st-records">0</b><span>RECORDS</span></div>
+  </div>
+
+  <h2>GAME OF THE DAY</h2>
+  <div class="grid" id="grid-daily"></div>
+
+  <p class="offline-note" id="tomorrow"></p>
+
+  <div class="panel" style="margin-top:12px">
+    <div class="live"><span class="dot"></span><b id="live-count">0</b><span>playing right now</span></div>
+    <div class="chips" id="live-list"></div>
+    <div class="offline-note hidden" id="live-off">Live players and the global leaderboard switch on once Supabase is connected in config.js.</div>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <div class="lb-title" id="lb-title">TODAY'S TOP 10</div>
+    <div class="lb" id="hub-lb"></div>
+  </div>
+
+  <div class="ad-slot hub-ad" id="ad-top"></div>
+
+  <h2>ALL GAMES</h2>
+  <div class="grid" id="grid"></div>
+
+  <div class="ad-slot hub-ad" id="ad-mid"></div>
+
+  <h2>DAILY SIMULATIONS</h2>
+  <div class="social">
+    <a id="lnk-ig" href="#" target="_blank" rel="noopener">📸 Instagram</a>
+    <a id="lnk-yt" href="#" target="_blank" rel="noopener">▶ YouTube</a>
+    <a id="lnk-tt" href="#" target="_blank" rel="noopener">🎵 TikTok</a>
+  </div>
+
+  <footer>© Bonkoball · All games and sounds made by us · <a href="privacy.html">Privacy</a></footer>
+</main>
+
+<script src="js/online.js"></script>
+<script src="js/bonko.js"></script>
+<script src="js/ads.js"></script>
+<script>
+(function () {
+  const C = window.BONKO_CONFIG, B = window.Bonko, O = window.BonkoOnline, games = window.BONKO_GAMES, S = B.store, fmt = B.fmt;
+  const $ = (s) => document.querySelector(s);
+  $("#lnk-ig").href = C.instagram; $("#lnk-yt").href = C.youtube; $("#lnk-tt").href = C.tiktok;
+
+  // hero mascot
+  const hc = $("#hero-mascot"), hx = hc.getContext("2d");
+  let t = 0; (function loop() { requestAnimationFrame(loop); t += 1 / 60;
+    hx.clearRect(0, 0, 220, 220); const y = 112 + Math.sin(t * 2.2) * 8, sq = 1 + Math.sin(t * 2.2) * 0.04;
+    B.drawMascot(hx, 100, y, 68, { ring: true, squash: sq, look: [Math.sin(t * 0.7) * 0.6, -0.3] }); })();
+
+  // name
+  const showName = () => { $("#who-name").textContent = O.ensureName(); };
+  showName();
+  $("#who-edit").onclick = () => { $("#name-row").classList.remove("hidden"); $("#name-in").value = O.name; $("#name-in").focus(); };
+  const commit = () => { if (O.setName($("#name-in").value)) { showName(); $("#name-row").classList.add("hidden"); } };
+  $("#name-ok").onclick = commit; $("#name-in").addEventListener("keydown", (e) => { if (e.key === "Enter") commit(); });
+
+  // stats
+  $("#st-plays").textContent = fmt(S.get("plays", 0));
+  $("#st-total").textContent = fmt(S.get("total", 0));
+  $("#st-records").textContent = games.filter((g) => S.get("best." + g.id, 0) > 0).length;
+
+  // cards
+  function card(g, featured) {
+    const a = document.createElement("a"); a.className = "card" + (featured ? " featured" : ""); a.href = "games/" + g.id + "/";
+    const w = featured ? 600 : 300, h = 300, best = S.get("best." + g.id, 0);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h; a.appendChild(cv);
+    const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = g.tag; a.appendChild(tag);
+    if (best) { const b = document.createElement("span"); b.className = "best"; b.textContent = "★ " + fmt(best); a.appendChild(b); }
+    if (featured) { const d = document.createElement("span"); d.className = "daily"; d.textContent = "🔥 TODAY · " + O.dayKey(); a.appendChild(d); }
+    const meta = document.createElement("div"); meta.className = "meta";
+    const bb = document.createElement("b"); bb.textContent = g.emoji + " " + g.name; const sm = document.createElement("small"); sm.textContent = g.desc;
+    meta.appendChild(bb); meta.appendChild(sm); a.appendChild(meta);
+    const cx = cv.getContext("2d");
+    const grad = cx.createLinearGradient(0, 0, w, h); grad.addColorStop(0, B.hsv(g.hue, 0.7, 0.35)); grad.addColorStop(1, B.hsv(g.hue + 40, 0.8, 0.15));
+    cx.fillStyle = grad; cx.fillRect(0, 0, w, h);
+    for (let k = 0; k < 14; k++) { cx.fillStyle = B.hsv(g.hue + k * 25, 0.8, 1, 0.12); cx.beginPath(); cx.arc(B.rand(w), B.rand(h), B.rand(10, 60), 0, 7); cx.fill(); }
+    cx.strokeStyle = B.hsv(g.hue + 60, 0.6, 1, 0.5); cx.lineWidth = 5; cx.beginPath(); cx.arc(w / 2, h * 0.58, h * 0.42, 0, 7); cx.stroke();
+    B.drawMascot(cx, w / 2 + (featured ? -120 : 0), h * 0.58, 58, { ring: true, mood: g.id === "grumpo" ? "wow" : "grin" });
+    if (g.id === "grumpo") B.drawGrumpo(cx, w * 0.75, h * 0.5, 90);
+    if (featured) { B.drawMascot(cx, w / 2 + 110, h * 0.5, 30, { mood: "wow" }); B.drawMascot(cx, w / 2 + 190, h * 0.7, 22); }
+    return a;
+  }
+  const daily = O.gameOfTheDay();
+  $("#grid-daily").appendChild(card(daily, true));
+  const tmr = games[(O.dayIndex() + 1) % games.length]; $("#tomorrow").textContent = "Tomorrow's game: " + tmr.emoji + " " + tmr.name + " · a new game of the day every 24 h";
+  games.forEach((g) => $("#grid").appendChild(card(g, false)));
+
+  // leaderboard for the game of the day
+  $("#lb-title").textContent = (O.enabled ? "TODAY'S TOP 10 · " : "TOP 10 ON THIS DEVICE · ") + daily.name.toUpperCase();
+  O.top(daily.id, { today: true, limit: 10 }).then((top) => {
+    const lb = $("#hub-lb");
+    if (!top.length) { const e = document.createElement("div"); e.className = "offline-note"; e.textContent = "No scores yet today. Be the first!"; lb.appendChild(e); return; }
+    top.forEach((r, i) => { const row = document.createElement("div"); row.className = "lb-row" + (r.cid === O.clientId ? " me" : "");
+      const a = document.createElement("span"); a.textContent = (i + 1) + ". " + r.name; const b = document.createElement("b"); b.textContent = fmt(r.score); row.appendChild(a); row.appendChild(b); lb.appendChild(row); });
+  });
+
+  // live players
+  if (O.enabled) {
+    O.join("hub");
+    O.onPlayers((list) => {
+      $("#live-count").textContent = list.length; const box = $("#live-list"); box.innerHTML = "";
+      list.slice(0, 30).forEach((p) => { const c = document.createElement("span"); c.className = "chip" + (p.me ? " me" : "");
+        const gm = games.find((x) => x.id === p.game); c.textContent = p.name + " "; const s = document.createElement("small"); s.textContent = gm ? "· " + gm.emoji + " " + gm.name : "· lobby"; c.appendChild(s); box.appendChild(c); });
+    });
+  } else { $("#live-count").textContent = "1"; $("#live-off").classList.remove("hidden"); const c = document.createElement("span"); c.className = "chip me"; c.textContent = O.name + " (you)"; $("#live-list").appendChild(c); }
+
+  if (window.BonkoAds) { BonkoAds.banner($("#ad-top")); BonkoAds.banner($("#ad-mid")); }
+})();
+</script>
+</body>
+</html>
