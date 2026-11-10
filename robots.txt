@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://bonkoball.com/sitemap.xml
+Sitemap: https://mmk-34.github.io/bonkoball/sitemap.xml

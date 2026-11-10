@@ -3,7 +3,7 @@
 //  Leave adsenseClient empty while testing: ads are then silently skipped.
 // ======================================================================
 window.BONKO_CONFIG = {
-  siteUrl: "https://bonkoball.com",          // your final domain (used in share text + sitemap)
+  siteUrl: "https://mmk-34.github.io/bonkoball",          // your final domain (used in share text + sitemap)
   siteName: "Bonkoball",
   instagram: "https://instagram.com/bonkoball",
   youtube: "https://youtube.com/@bonkoball",
